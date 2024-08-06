@@ -1,0 +1,64 @@
+import pandas as pd
+from sklearn.feature_extraction.text import CountVectorizer, TfidfTransformer
+from sklearn.model_selection import train_test_split
+from sklearn.pipeline import Pipeline
+from sklearn.naive_bayes import MultinomialNB
+from sklearn.metrics import accuracy_score, classification_report
+
+# Load the data
+df = pd.read_csv('/content/spam.csv', encoding='latin1')  # Adjust encoding as needed
+
+# Inspect the first few rows and the column names of the DataFrame
+print(df.head())
+print(df.columns)
+
+# Drop unnecessary columns if there are any
+# Assuming the first column is 'v1' and second column is 'v2', and the rest can be dropped
+df = df[['v1', 'v2']]
+
+# Rename the columns for easier access
+df.columns = ['label', 'message']
+
+# Display the first few rows of the DataFrame
+print(df.head())
+
+# Convert labels to binary values (ham = 0, spam = 1)
+df['label'] = df['label'].map({'ham': 0, 'spam': 1})
+
+# Split the data into training and testing sets
+X_train, X_test, y_train, y_test = train_test_split(df['message'], df['label'], test_size=0.2, random_state=42)
+
+# Build the pipeline
+pipeline = Pipeline([
+    ('vect', CountVectorizer()),
+    ('tfidf', TfidfTransformer()),
+    ('clf', MultinomialNB())
+])
+
+# Train the model
+pipeline.fit(X_train, y_train)
+
+# Make predictions
+y_pred = pipeline.predict(X_test)
+
+
+accuracy = accuracy_score(y_test, y_pred)
+print("Accuracy:", accuracy)
+print("Classification Report:\n", classification_report(y_test, y_pred))
+
+# Sample new SMS messages for prediction
+new_sms = [
+    "Free entry in 2 a wkly comp to win FA Cup final tkts 21st May 2005. Text FA to 87121 to receive entry question(std txt rate)", 
+    "I'm gonna be home soon and I don't want to talk about this stuff anymore tonight, k? I've cried enough today."
+]
+
+# Predict whether the new SMS messages are spam or not
+predictions = pipeline.predict(new_sms)
+
+# Map predictions to labels
+prediction_labels = ["spam" if pred == 1 else "ham" for pred in predictions]
+
+# Show the predictions
+for sms, label in zip(new_sms, prediction_labels):
+    print(f"Message: {sms}\nPrediction: {label}\n")
+
